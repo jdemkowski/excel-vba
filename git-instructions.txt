@@ -1,0 +1,79 @@
+﻿Procedura tworzenia brancha i zmian:
+
+1. Wbijamy do katalogu git-a
+</> cd git  OR
+</> cd .git OR
+</> cd C:/git/RMS
+
+2. Pobieranie repozytorium git@gitlab.lppdev.pl:RMS_Apps/RMS.git
+</> git clone ssh://git@gitlab.lppdev.pl:222/RMS_Apps/RMS.git
+
+3. Wchodzimy do tego co się pobrało
+</> cd RMS
+
+4. Pobranie najnowszych zmian (?)
+</> git pull
+
+5. Tworzenie brancha
+</> git branch JIRA-ID
+
+6. Pobranie brancha
+</> git checkout JIRA-ID
+
+  6.1. Pobranie zmian, jeśli robisz checkout z: </> git checkout master
+  </> git pull
+
+7. Zmiany w systemie plików - dodanie do gita plików, które wcześniej nie istniały
+</> git add PATH (jeżeli jakaś nazwa zawiera spację to trzeba ująć ją w cudzysłowy, np. "a b c")
+
+8. Commit zmian
+</> git commit -a -m "[JIRA-ID] komentarz opisujący zmiany z biznesowego punktu widzenia"
+
+9. Wrzucenie zmiana do repozytorium zdalnego
+</> git push -u origin JIRA-ID
+
+10. Tworzenie paczki przez jenkins'a
+</> (...)
+
+11. Pobranie tego co zrobił jenkins
+</> git pull
+
+Reszta:
+x) git clone ssh://git@gitlab.lppdev.pl:222/ISO_Apps/ISO_DB.git 
+ dane się pobiera z np.:  http://gitlab.lppdev.pl/ISO_Apps/ISO_DB ale modyfikuje się ścieżkę
+x)git pull - pobranie inf ze zdalengo repo
+x) cd ISO_DB/ - wejscie do odpowiedniego folderu
+x) git checkout AFE-58 - checkout brancha
+x) git merge origin/master - merge z masteram do brancha. Origin powoduje że nie merguje się z kopi lokalnej,
+   tylko z serwera. Bez origin bym muisał najpierw
+
+	git checkout master
+	git pull
+	git checkout AFE-58
+	git merge master
+
+x) wejście w wyświetlony plik/pliki z poziomu windowsa i rozwiązanie konfliktów
+x) git commit -am "[AFE-58] - merge, rozwiazanie konfliktu"     - commit z kopi lokalnej do brancha
+x) git merge master  - merge na potwierdzenie
+x) git push - wrzucenie do brancha na serwerze zmian
+x) Merge request + submitt merga + wrzucenie zmian. zmienić nazwe title na [AFE-58]
+x) Wdrożenie na Jenkins
+
+
+
+
+git@gitlab.lppdev.pl:Integration_Apps/egate.git
+
+http://rogerdudler.github.io/git-guide/index.pl.html   - super strona
+
+
+git stash       Dodanie zmienonych plików do pamięci/stosu i usunięcie ich z aktywnego brancha
+git pull --rebase   Pobranie najnowszych zmian z aktywnego brancha zdalnego
+git stash pop     Przywrócenie zmodyfikowanych plików z pamięci/stosu
+git stash clear   Czyszczenie pamięci/stosu
+
+
+
+git@gitlab.lppdev.pl:Integration_Apps/egate.git
+
+git clone ssh://git@gitlab.lppdev.pl:222/Integration_Apps/egate.git

@@ -1,0 +1,179 @@
+Option Explicit
+
+Public Sub zlaczDanePoKluczu()
+    
+    Dim wbDane1 As Workbook, wbDane2 As Workbook, wbWynik As Workbook
+    Dim rnZakres1 As Range, rnZakres2 As Range, rnZakres3 As Range
+    Dim i As Long, j As Long, k As Long
+    
+    ' Określenie źródeł danych
+    
+    Set wbDane1 = ThisWorkbook
+    With wbDane1.ActiveSheet
+        Set rnZakres1 = .Range("A3", .Range("K1048576").End(xlUp))
+    End With
+    
+    '
+    '====================== OBSŁUGA OTWIERANIA PLIKÓW =========================
+    '
+    ' Deklarujemy zmienną jako obiekt FileDialog.
+    '
+    Dim fd As FileDialog
+    '
+    ' Tworzymy obiekt FileDialog jako okno dialogowe FilePicker.
+    '
+    Set fd = Application.FileDialog(msoFileDialogFilePicker)
+    '
+    ' Deklarujemy zmienną do przechowywania ścieżki każdego z wybranych
+    ' elementów. Pomimo, że ścieżka jest typu String, zmienna musi być
+    ' typu Variant, ponieważ pętle For Each...Next działają tylko ze
+    ' zmiennymi typu Variant i Obiektami.
+    '
+    'Optional: FileDialog properties
+    fd.AllowMultiSelect = False
+    fd.Title = "Wybierz plik z ilościami do strefy impulsowej"
+    fd.InitialFileName = "N:\PARTNER+_EKSPOZYCJA\SPACEMAN\Planogram Templates\"
+    'Optional: Add filters
+    fd.Filters.Clear
+    fd.Filters.Add "Excel files", "*.xls, *.xlsx"
+    fd.Filters.Add "All files", "*.*"
+    '
+    'Dim vrtSelectedItem As Variant
+    '
+    ' Używamy bloku With...End With, żeby odwoływać się do obiektu FileDialog.
+    '
+    With fd
+        '
+        ' Używamy metody Show, żeby wyswietlić okno dialogowe FilePicker
+        ' i zwrócić akcję wykonaną przez użytkownika.
+        ' Użytkownik nacisnął przycisk akcji "Otwórz" (Open).
+        '
+        If .Show = -1 Then
+        
+            Application.ScreenUpdating = False
+            '
+            '========================= OBSŁUGA DANYCH ========================
+            '
+            ' Tworzymy arkusz wsResults, do którego będą wklejane dane
+            ' z kolejno otwieranych plików.
+            '
+            Set wbDane2 = Workbooks.Open(fd.SelectedItems(1))
+            With wbDane2.Worksheets("Lista")
+                Set rnZakres2 = .Range("A2", .Range("H1048576").End(xlUp))
+            End With
+            
+            Set wbWynik = Workbooks.Add
+            
+            k = 1
+        
+            For i = 1 To rnZakres1.Rows.Count
+                If rnZakres1(i, 4) = "TAK" Then
+                    For j = 1 To rnZakres2.Rows.Count
+                        If rnZakres2(j, 1) = mapujNazwy(rnZakres1(i, 3)) Then
+                            k = k + 1
+                            wbWynik.Worksheets(1).Cells(k, 3) = rnZakres1(i, 2)
+                            wbWynik.Worksheets(1).Cells(k, 4) = rnZakres2(j, 2)
+                            wbWynik.Worksheets(1).Cells(k, 5) = rnZakres2(j, 8) * rnZakres1(i, 6)
+                            wbWynik.Worksheets(1).Cells(k, 6) = rnZakres2(j, 1)
+                        End If
+                    Next j
+                End If
+            Next i
+            
+            Set rnZakres3 = wbWynik.Worksheets(1).Range("A2:J" & k)
+            rnZakres3.Select
+            
+            With rnZakres3
+            .Columns(1).Value = DatePart("yyyy", Date, vbMonday)
+            .Columns(2).Value = DatePart("q", Date, vbMonday)
+            .Columns(3).NumberFormat = "0"
+            .Columns(3).Value = .Columns(3).Value
+            .Columns(4).NumberFormat = "0"
+            .Columns(4).Value = .Columns(4).Value
+            .Columns(5).NumberFormat = "0.0000"
+            .Columns(5).Value = .Columns(5).Value
+            .Columns(10).Value = .Columns(6).Value
+            .Columns(6).Value = 1
+            .Columns(7).Value = InputBox("Podaj datę startu rozliczania w formacie yyyy-mm-dd", _
+                "Wprowadź dane", CDate(WorksheetFunction.WorkDay(Date, 4)))
+            .Columns(8).Value = InputBox("Podaj datę końca rozliczania w formacie yyyy-mm-dd", _
+                "Wprowadź dane", CDate(WorksheetFunction.EoMonth(Date, _
+                DatePart("m", CDate(WorksheetFunction.WorkDay(Date, 4)), vbMonday) Mod 2)))
+            .Columns(9).Value = 1
+            End With
+            
+            Call naglowkiMDS
+            rnZakres3.Select
+            Call MsgBox("Operacja zakończona powodzeniem." & vbCrLf & _
+                vbCrLf & "Złączono " & k & " wierszy!")
+            Application.ScreenUpdating = True
+            
+            'wbWynik.SaveAs ("N:\PARTNER+_EKSPOZYCJA\SPACEMAN\Planogram Templates" & _
+                "\2018\03_04 2018\Strefa impulsowa 04 2018\Ilości\Test" & Format(Now, "_yyyymmdd_hhnnss"))
+            wbDane2.Close
+            '
+            '===================== KONIEC OBSŁUGI DANYCH ====================
+            '
+            ' Użytkownik nacisnął przycisk "Anuluj" (Cancel).
+            '
+        Else
+            MsgBox "Anulowano operację."
+            Exit Sub
+        End If
+        
+    End With
+    '
+    ' Ustawienie zmiennej obiektowej na Nothing.
+    '
+    Set fd = Nothing
+    '
+    '==================== KONIEC OBSŁUGI OTWIERANIA PLIKÓW =====================
+    '
+End Sub
+
+Function mapujNazwy(nazwa As String) As String
+    
+    Select Case nazwa
+        Case "stand mały"
+            mapujNazwy = "ST_S"
+        Case "stand duży"
+            mapujNazwy = "ST_L"
+        Case "kula impulsowa"
+            mapujNazwy = "KU"
+        Case "kosz podstawowy 60"
+            mapujNazwy = "KO_P_60"
+        Case "kosz podstawowy 40"
+            mapujNazwy = "KO_P_40"
+        Case "kosz podstawowy 30"
+            mapujNazwy = "KO_P_30"
+        Case "kosz uzupełniający 60"
+            mapujNazwy = "KO_U_60"
+        Case "kosz uzupełniający 40"
+            mapujNazwy = "KO_U_40"
+        Case "kosz uzupełniający 30"
+            mapujNazwy = "KO_U_30"
+    End Select
+    
+End Function
+
+Public Sub naglowkiMDS()
+    '
+    ' Makro w aktywnym arkuszu aktywnego skoroszytu wypisuje w zakresie
+    ' $A$1:$J$1 nagłowki kolumn jak w jednostce RaportowaniePlamy w MDS
+    '
+    Cells(1, 1) = "Year"
+    Cells(1, 2) = "Quarter"
+    Cells(1, 3) = "PharmacyNeucaId"
+    Cells(1, 4) = "ProductNeucaId"
+    Cells(1, 5) = "Quantity"
+    Cells(1, 6) = "Primary_0_OrAdditional_1"
+    Cells(1, 7) = "DataOd"
+    Cells(1, 8) = "DataDo"
+    Cells(1, 9) = "PlanogramIndywidualny"
+    Cells(1, 10) = "Merch_Category"
+    '
+    ' Czy różni się czymś użycie Columns("A:J") od Range("A:J")?
+    '
+    Columns("A:J").EntireColumn.AutoFit
+    
+End Sub
